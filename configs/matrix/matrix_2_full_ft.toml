@@ -1,0 +1,46 @@
+
+output_dir = './matrix-fractal-finetune'
+dataset = './fractal_train_dataset.toml'
+
+# training settings
+epochs = 300
+micro_batch_size_per_gpu = 8
+pipeline_stages = 1
+gradient_accumulation_steps = 1
+gradient_clipping = 1
+warmup_steps = 5000
+
+eval_datasets = [
+  {name = 'val_dataset', config = './fractal_val_dataset.toml'},
+]
+
+# eval settings
+eval_every_n_epochs = 10
+eval_before_first_step = false
+eval_micro_batch_size_per_gpu = 16
+eval_gradient_accumulation_steps = 1
+
+# misc settings
+save_every_n_epochs = 1
+checkpoint_every_n_minutes = 720
+activation_checkpointing = 'unsloth'
+partition_method = 'parameters'
+save_dtype = 'bfloat16'
+caching_batch_size = 1
+steps_per_print = 1
+video_clip_mode = 'single_beginning'
+blocks_to_swap = 0
+
+[model]
+type = 'matrix_2_base'
+ckpt_path = './Matrix-Game-2.0'
+dtype = 'bfloat16'
+transformer_dtype = 'bfloat16'
+timestep_sample_method = 'logit_normal'
+
+[optimizer]
+type = 'adamw_optimi'
+lr = 2e-5
+betas = [0.9, 0.99]
+weight_decay = 0.01
+eps = 1e-8
