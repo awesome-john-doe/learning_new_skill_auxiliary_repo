@@ -100,13 +100,13 @@ All the confings with hypeparameters used in the paper can be found in the [conf
 
 All the models were trained using single node with 8 H100 GPUs on board with DDP parallelization approach. The approximate training time to convergence is given in the table below.
 
-| Model                   | Trainig time, hours | Number of optimization steps |
-| ----------------------- | ------------------- | ---------------------------- |                                
-| Matrix-Game 2.0         | 216                 | 45k                          |
-| Ctrl-World              | 99                  | 45k                          |
-| IDM, all commands       | 197                 | 100k                         |
-| IDM, w/o knock          | 301                 | 100k                         |
-| IDM, w/o open and close | 280                 | 100k                         |
+| Model                   | Trainig time, hours | Number of optimization steps | Number of GPUs |
+| ----------------------- | ------------------- | ---------------------------- | -------------- |                                
+| Matrix-Game 2.0         | 216                 | 45k                          | 8              |
+| Ctrl-World              | 99                  | 45k                          | 8              |
+| IDM, all commands       | 197                 | 100k                         | 1              |
+| IDM, w/o knock          | 301                 | 100k                         | 1              |
+| IDM, w/o open and close | 280                 | 100k                         | 1              |
 
 ## Supplementary materials
 
