@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Learning New Robot Skills with IDM and World Models</title>
+  <style>
+    :root { color-scheme: light; --ink:#172033; --muted:#5a6573; --line:#dbe1ea; --bg:#f7f8fb; --card:#fff; --soft:#fbfcff; --accent:#315efb; --accent2:#14b8a6; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--ink); background: var(--bg); }
+    header { padding: 64px 24px 42px; background: radial-gradient(circle at 16% 12%, rgba(20,184,166,.34), transparent 30%), linear-gradient(135deg, #111827, #263a8a); color: white; }
+    header .wrap, main, footer { max-width: 1180px; margin: 0 auto; }
+    h1 { margin: 0 0 14px; font-size: clamp(2.25rem, 5.5vw, 4.8rem); line-height: 1.03; letter-spacing: -0.055em; }
+    h2 { margin: 0 0 14px; font-size: clamp(1.55rem, 3vw, 2.25rem); letter-spacing: -0.035em; }
+    h3 { margin: 4px 0 0; font-size: 1.15rem; }
+    p { line-height: 1.62; }
+    .lead { max-width: 940px; margin: 0; color: #dbe5ff; font-size: 1.08rem; line-height: 1.65; }
+    .actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:24px; }
+    .btn { color:white; text-decoration:none; border:1px solid rgba(255,255,255,.36); border-radius:999px; padding:10px 16px; background:rgba(255,255,255,.12); backdrop-filter: blur(8px); }
+    main { padding: 30px 24px 64px; }
+    section { margin: 0 0 32px; }
+    .panel, .pack { padding: 22px; border: 1px solid var(--line); border-radius: 20px; background: white; box-shadow: 0 14px 32px rgba(17,24,39,.06); }
+    .eyebrow { margin:0 0 6px; color:var(--accent); font-weight:800; letter-spacing:.08em; text-transform:uppercase; font-size:.78rem; }
+    .two-col { display:grid; grid-template-columns: minmax(0, 1fr) minmax(320px, .9fr); gap:22px; align-items:center; }
+    .summary { font-size:1.02rem; color:var(--ink); margin:0; }
+    .figure { margin:0; border:1px solid var(--line); border-radius:18px; overflow:hidden; background:var(--soft); }
+    .figure img { display:block; width:100%; height:auto; }
+    .figure figcaption { padding:10px 12px; color:var(--muted); font-size:.9rem; font-weight:600; }
+    .method, .result-list { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px; }
+    .step, .result-card { padding:16px; border:1px solid var(--line); border-radius:16px; background:var(--soft); }
+    .step b, .result-card b { display:block; margin-bottom:6px; }
+    .table-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:16px; margin-top:16px; }
+    .table-card { overflow:auto; border:1px solid var(--line); border-radius:16px; background:var(--soft); }
+    table { width:100%; border-collapse:collapse; font-size:.92rem; }
+    th, td { padding:10px 12px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; white-space:nowrap; }
+    th { background:#eef3ff; font-size:.82rem; text-transform:uppercase; letter-spacing:.04em; color:#2f3b52; }
+    tr:last-child td { border-bottom:0; }
+    .note { color:var(--muted); margin:12px 0 0; font-size:.95rem; }
+    .packs { display:grid; gap:22px; }
+    .pack-head { margin-bottom:14px; }
+    .clip-row { display:grid; grid-template-columns: repeat(4, minmax(180px, 1fr)); gap:12px; }
+    .clip { margin:0; overflow:hidden; border:1px solid var(--line); border-radius:16px; background:white; }
+    .clip img { display:block; width:100%; height:auto; background:#fff; }
+    figcaption { padding:10px 12px; color:var(--muted); font-size:.92rem; font-weight:600; }
+    footer { padding: 0 24px 42px; color: var(--muted); font-size: .92rem; }
+    @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } .clip-row { grid-template-columns: repeat(2, minmax(180px, 1fr)); } }
+    @media (max-width: 520px) { .clip-row { grid-template-columns: 1fr; } th, td { white-space:normal; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>Learning New Robot Skills from Video Demonstrations</h1>
+      <p class="lead">We test whether videos of a missing robot skill can be converted into action-conditioned world-model training data. An inverse dynamics model predicts robot actions from video, the resulting trajectories are added to the world-model dataset, and generated rollouts are evaluated with objective metrics, MOS ratings, pairwise human preferences, and qualitative examples.</p>
+      <div class="actions"><a class="btn" href="#summary">Summary</a><a class="btn" href="#results">Results</a><a class="btn" href="#packs">Rollout examples</a><a class="btn" href="https://github.com/awesome-john-doe/learning_new_skill_auxiliary_repo">GitHub repository</a></div>
+    </div>
+  </header>
+  <main>
+    <section id="summary" class="panel two-col">
+      <div>
+        <p class="eyebrow">Problem and idea</p>
+        <h2>Can video-only skills become world-model training data?</h2>
+        <p class="summary">Action-conditioned world models need action-labeled examples of the behaviors they must simulate. For new skills, collecting synchronized robot observations and actions is expensive, while videos are easier to generate, retrieve, or record. The paper studies a controlled substitute: remove a target skill from the action-labeled Fractal data, recover actions for videos of that skill with an IDM, and train a world model on the resulting pseudo-labeled trajectories.</p>
+      </div>
+      <figure class="figure">
+        <img src="assets/idm_world_model_pipeline_no_vla.png" alt="IDM and world model pipeline">
+        <figcaption>Pipeline used in the paper: train IDM, infer actions from skill videos, train an action-conditioned world model, and generate skill rollouts.</figcaption>
+      </figure>
+    </section>
+
+    <section class="panel">
+      <p class="eyebrow">Experimental design</p>
+      <h2>Controlled skill-removal experiments on Fractal</h2>
+      <div class="method">
+        <div class="step"><b>Dataset</b>Fractal / RT-1 robot manipulation data with RGB observations and 7-dimensional Cartesian action commands.</div>
+        <div class="step"><b>Held-out skills</b>Knock and open/close commands are removed from action-labeled world-model training data.</div>
+        <div class="step"><b>IDM labeling</b>Videos of the missing skills are labeled with an inverse dynamics model following the GR00T-Dreams/DreamGen workflow.</div>
+        <div class="step"><b>World models</b>Experiments use two controllable video world models: CTRL-World and Matrix-Game 2.0.</div>
+      </div>
+    </section>
+
+    <section id="results" class="panel">
+      <p class="eyebrow">Main results</p>
+      <h2>IDM labels usually improve over no-action data and approach full-data behavior</h2>
+      <div class="result-list">
+        <div class="result-card"><b>MOS trend</b>Human MOS results show that IDM-labeled data often improves over the no-action baseline. Some confidence intervals overlap, so MOS is treated as descriptive evidence.</div>
+        <div class="result-card"><b>Pairwise equivalence</b>Pairwise human preferences stay close to 50%, and exact binomial TOST supports practical equivalence within the pre-specified [0.40, 0.60] margin.</div>
+        <div class="result-card"><b>Qualitative behavior</b>Rollouts of WMs trained with IDM-labeled data show almost equal quality to full-data WMs.</div>
+      </div>
+      <div class="table-grid">
+        <div class="table-card">
+          <table>
+            <thead><tr><th>Trajectory MOS</th><th>Full</th><th>No action</th><th>WM + IDM</th></tr></thead>
+            <tbody>
+              <tr><td>CTRL open/close</td><td>3.91 [3.81, 4.01]</td><td>2.02 [1.91, 2.13]</td><td><b>3.18 [2.93, 3.43]</b></td></tr>
+              <tr><td>Matrix open/close</td><td>4.10 [4.01, 4.18]</td><td>2.23 [2.09, 2.38]</td><td><b>2.75 [2.44, 3.05]</b></td></tr>
+              <tr><td>CTRL knock</td><td>3.96 [3.76, 4.16]</td><td>3.23 [3.04, 3.42]</td><td><b>4.15 [4.00, 4.31]</b></td></tr>
+              <tr><td>Matrix knock</td><td>4.53 [4.41, 4.64]</td><td>3.75 [3.54, 3.97]</td><td><b>3.82 [3.64, 4.00]</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-card">
+          <table>
+            <thead><tr><th>Pairwise criterion</th><th>WM</th><th>WM + IDM</th><th>Prob.</th><th>95% CI</th></tr></thead>
+            <tbody>
+              <tr><td>Visual quality</td><td>330</td><td>270</td><td>0.45</td><td>[0.411, 0.490]</td></tr>
+              <tr><td>Trajectory following</td><td>282</td><td>318</td><td>0.53</td><td>[0.490, 0.570]</td></tr>
+              <tr><td>Physical plausibility</td><td>282</td><td>318</td><td>0.53</td><td>[0.490, 0.570]</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <p class="note">MOS confidence intervals are computed over video-level means after averaging assessor ratings for the same clip. Pairwise rows use 600 decisions per criterion.</p>
+    </section>
+
+    <section id="packs" class="packs">
+      <div><p class="eyebrow">Rollout examples</p><h2>GT / Full data / IDM / No-action comparisons</h2></div>
+
+      <article class="pack">
+        <div class="pack-head"><p class="eyebrow">CTRL-World · Open/close</p><h3>Open Bottom Drawer</h3></div>
+        <div class="clip-row">
+          <figure class="clip"><img src="assets/videos/pack-01-ctrl-world-open-close-77594-gt.gif" alt="GT animation" loading="lazy"><figcaption>GT</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-01-ctrl-world-open-close-77594-wm-full-data.gif" alt="WM full data animation" loading="lazy"><figcaption>WM full data</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-01-ctrl-world-open-close-77594-wm-idm.gif" alt="WM + IDM animation" loading="lazy"><figcaption>WM + IDM</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-01-ctrl-world-open-close-77594-wm-without-open-close.gif" alt="WM without open/close animation" loading="lazy"><figcaption>WM without open/close</figcaption></figure>
+        </div>
+      </article>
+      <article class="pack">
+        <div class="pack-head"><p class="eyebrow">CTRL-World · Open/close</p><h3>Close Middle Drawer</h3></div>
+        <div class="clip-row">
+          <figure class="clip"><img src="assets/videos/pack-02-ctrl-world-open-close-81470-gt.gif" alt="GT animation" loading="lazy"><figcaption>GT</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-02-ctrl-world-open-close-81470-wm-full-data.gif" alt="WM full data animation" loading="lazy"><figcaption>WM full data</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-02-ctrl-world-open-close-81470-wm-idm.gif" alt="WM + IDM animation" loading="lazy"><figcaption>WM + IDM</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-02-ctrl-world-open-close-81470-wm-without-open-close.gif" alt="WM without open/close animation" loading="lazy"><figcaption>WM without open/close</figcaption></figure>
+        </div>
+      </article>
+      <article class="pack">
+        <div class="pack-head"><p class="eyebrow">CTRL-World · Open/close</p><h3>Open Bottom Drawer</h3></div>
+        <div class="clip-row">
+          <figure class="clip"><img src="assets/videos/pack-03-ctrl-world-open-close-82720-gt.gif" alt="GT animation" loading="lazy"><figcaption>GT</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-03-ctrl-world-open-close-82720-wm-full-data.gif" alt="WM full data animation" loading="lazy"><figcaption>WM full data</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-03-ctrl-world-open-close-82720-wm-idm.gif" alt="WM + IDM animation" loading="lazy"><figcaption>WM + IDM</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-03-ctrl-world-open-close-82720-wm-without-open-close.gif" alt="WM without open/close animation" loading="lazy"><figcaption>WM without open/close</figcaption></figure>
+        </div>
+      </article>
+      <article class="pack">
+        <div class="pack-head"><p class="eyebrow">CTRL-World · Open/close</p><h3>Close Bottom Drawer</h3></div>
+        <div class="clip-row">
+          <figure class="clip"><img src="assets/videos/pack-04-ctrl-world-open-close-80939-gt.gif" alt="GT animation" loading="lazy"><figcaption>GT</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-04-ctrl-world-open-close-80939-wm-full-data.gif" alt="WM full data animation" loading="lazy"><figcaption>WM full data</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-04-ctrl-world-open-close-80939-wm-idm.gif" alt="WM + IDM animation" loading="lazy"><figcaption>WM + IDM</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-04-ctrl-world-open-close-80939-wm-without-open-close.gif" alt="WM without open/close animation" loading="lazy"><figcaption>WM without open/close</figcaption></figure>
+        </div>
+      </article>
+      <article class="pack">
+        <div class="pack-head"><p class="eyebrow">CTRL-World · Knock</p><h3>Knock Green Can Over</h3></div>
+        <div class="clip-row">
+          <figure class="clip"><img src="assets/videos/pack-05-ctrl-world-knock-60547-gt.gif" alt="GT animation" loading="lazy"><figcaption>GT</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-05-ctrl-world-knock-60547-wm-full-data.gif" alt="WM full data animation" loading="lazy"><figcaption>WM full data</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-05-ctrl-world-knock-60547-wm-idm.gif" alt="WM + IDM animation" loading="lazy"><figcaption>WM + IDM</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-05-ctrl-world-knock-60547-wm-without-knock.gif" alt="WM without knock animation" loading="lazy"><figcaption>WM without knock</figcaption></figure>
+        </div>
+      </article>
+      <article class="pack">
+        <div class="pack-head"><p class="eyebrow">CTRL-World · Knock</p><h3>Knock Blue Plastic Bottle Over</h3></div>
+        <div class="clip-row">
+          <figure class="clip"><img src="assets/videos/pack-08-ctrl-world-knock-36724-gt.gif" alt="GT animation" loading="lazy"><figcaption>GT</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-08-ctrl-world-knock-36724-wm-full-data.gif" alt="WM full data animation" loading="lazy"><figcaption>WM full data</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-08-ctrl-world-knock-36724-wm-idm.gif" alt="WM + IDM animation" loading="lazy"><figcaption>WM + IDM</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-08-ctrl-world-knock-36724-wm-without-knock.gif" alt="WM without knock animation" loading="lazy"><figcaption>WM without knock</figcaption></figure>
+        </div>
+      </article>
+      <article class="pack">
+        <div class="pack-head"><p class="eyebrow">Matrix-Game 2.0 · Open/close</p><h3>Open Bottom Drawer</h3></div>
+        <div class="clip-row">
+          <figure class="clip"><img src="assets/videos/pack-09-matrix-game-2-0-open-close-82720-gt.gif" alt="GT animation" loading="lazy"><figcaption>GT</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-09-matrix-game-2-0-open-close-82720-wm-full-data.gif" alt="WM full data animation" loading="lazy"><figcaption>WM full data</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-09-matrix-game-2-0-open-close-82720-wm-idm.gif" alt="WM + IDM animation" loading="lazy"><figcaption>WM + IDM</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-09-matrix-game-2-0-open-close-82720-wm-without-open-close.gif" alt="WM without open/close animation" loading="lazy"><figcaption>WM without open/close</figcaption></figure>
+        </div>
+      </article>
+      <article class="pack">
+        <div class="pack-head"><p class="eyebrow">Matrix-Game 2.0 · Open/close</p><h3>Close Middle Drawer</h3></div>
+        <div class="clip-row">
+          <figure class="clip"><img src="assets/videos/pack-10-matrix-game-2-0-open-close-79157-gt.gif" alt="GT animation" loading="lazy"><figcaption>GT</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-10-matrix-game-2-0-open-close-79157-wm-full-data.gif" alt="WM full data animation" loading="lazy"><figcaption>WM full data</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-10-matrix-game-2-0-open-close-79157-wm-idm.gif" alt="WM + IDM animation" loading="lazy"><figcaption>WM + IDM</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-10-matrix-game-2-0-open-close-79157-wm-without-open-close.gif" alt="WM without open/close animation" loading="lazy"><figcaption>WM without open/close</figcaption></figure>
+        </div>
+      </article>
+      <article class="pack">
+        <div class="pack-head"><p class="eyebrow">Matrix-Game 2.0 · Open/close</p><h3>Close Top Drawer</h3></div>
+        <div class="clip-row">
+          <figure class="clip"><img src="assets/videos/pack-11-matrix-game-2-0-open-close-80255-gt.gif" alt="GT animation" loading="lazy"><figcaption>GT</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-11-matrix-game-2-0-open-close-80255-wm-full-data.gif" alt="WM full data animation" loading="lazy"><figcaption>WM full data</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-11-matrix-game-2-0-open-close-80255-wm-idm.gif" alt="WM + IDM animation" loading="lazy"><figcaption>WM + IDM</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-11-matrix-game-2-0-open-close-80255-wm-without-open-close.gif" alt="WM without open/close animation" loading="lazy"><figcaption>WM without open/close</figcaption></figure>
+        </div>
+      </article>
+      <article class="pack">
+        <div class="pack-head"><p class="eyebrow">Matrix-Game 2.0 · Knock</p><h3>Knock Green Can Over</h3></div>
+        <div class="clip-row">
+          <figure class="clip"><img src="assets/videos/pack-13-matrix-game-2-0-knock-67954-gt.gif" alt="GT animation" loading="lazy"><figcaption>GT</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-13-matrix-game-2-0-knock-67954-wm-full-data.gif" alt="WM full data animation" loading="lazy"><figcaption>WM full data</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-13-matrix-game-2-0-knock-67954-wm-idm.gif" alt="WM + IDM animation" loading="lazy"><figcaption>WM + IDM</figcaption></figure>
+          <figure class="clip"><img src="assets/videos/pack-13-matrix-game-2-0-knock-67954-wm-without-knock.gif" alt="WM without knock animation" loading="lazy"><figcaption>WM without knock</figcaption></figure>
+        </div>
+      </article>
+    </section>  </main>
+</body>
+</html>
