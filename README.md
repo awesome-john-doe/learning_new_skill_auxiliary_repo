@@ -111,5 +111,3 @@ All the models were trained using single node with 8 H100 GPUs on board with DDP
 ## Supplementary materials
 
 Detailed human evaluation protocol [report](./reports/human-evaluation-protocol.pdf) is also presented in the repository.
-
-[TBA rollouts]
